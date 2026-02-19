@@ -1,18 +1,15 @@
-<template>
+﻿<template>
   <div class="min-h-screen bg-white text-slate-900 flex flex-col">
     <header
       ref="headerEl"
       class="fixed top-0 left-0 right-0 z-50 bg-white border-b border-slate-200"
     >
       <div class="max-w-none mx-auto px-4 sm:px-6 lg:px-10">
-        <!-- Row 1 -->
         <div class="h-16 flex items-center gap-3 sm:gap-4">
-          <!-- Logo -->
           <NuxtLink to="/" class="flex items-center gap-3 shrink-0">
             <img src="/MBLogo.png" alt="M&B" class="h-9 w-auto object-contain" />
           </NuxtLink>
 
-          <!-- Search (desktop) -->
           <div class="flex-1 hidden md:flex">
             <div class="w-full max-w-2xl mx-auto flex">
               <input
@@ -40,9 +37,7 @@
             </div>
           </div>
 
-          <!-- Right actions -->
           <div class="ml-auto flex items-center gap-2 sm:gap-4">
-            <!-- Mobile search button -->
             <button
               class="md:hidden h-9 w-9 inline-flex items-center justify-center rounded-md border border-slate-200 hover:bg-slate-50"
               @click="toggleMobileSearch"
@@ -82,7 +77,6 @@
 
             <div class="h-6 w-px bg-slate-200 hidden sm:block"></div>
 
-            <!-- Language -->
             <div class="relative flex items-center gap-2">
               <button
                 class="text-sm text-slate-600 hover:text-red-700 flex items-center gap-1"
@@ -118,7 +112,6 @@
           </div>
         </div>
 
-        <!-- Mobile Search -->
         <div v-if="showMobileSearch" class="pb-4 md:hidden">
           <div class="flex">
             <input
@@ -141,12 +134,11 @@
           </div>
         </div>
 
-        <!-- Row 2: Nav + Auth -->
         <div class="flex items-center justify-between h-12">
           <nav class="flex items-center gap-4 text-sm overflow-x-auto whitespace-nowrap no-scrollbar">
             <NuxtLink
               v-for="item in nav"
-              :key="item.to"
+              :key="item.to + item.label"
               :to="item.to"
               class="font-semibold text-slate-800 hover:text-red-700 shrink-0"
               :class="route.path === item.to ? 'text-red-600' : ''"
@@ -156,7 +148,6 @@
           </nav>
 
           <div class="ml-4 shrink-0">
-            <!-- ✅ กันพัง: ถ้า auth ยังไม่ ready ก็โชว์ปุ่ม login ไว้ก่อน -->
             <NuxtLink
               v-if="!isLoggedIn"
               to="/login"
@@ -205,7 +196,7 @@
           <NuxtLink to="/contact" class="hover:underline">Cookie settings</NuxtLink>
           <NuxtLink to="/contact" class="hover:underline">Imprint</NuxtLink>
           <NuxtLink to="/contact" class="hover:underline">General terms and conditions</NuxtLink>
-          <span class="sm:ml-auto text-white/70">© {{ new Date().getFullYear() }} M&B</span>
+          <span class="sm:ml-auto text-white/70">&copy; {{ new Date().getFullYear() }} M&B</span>
         </div>
       </div>
     </footer>
@@ -222,6 +213,7 @@ const nav = [
   { label: "ผลิตภัณฑ์", to: "/product" },
   { label: "คอร์สอบรม", to: "/training" },
   { label: "ใบเสนอราคา", to: "/invoice" },
+  { label: "รับทำเว็บไซต์ธุรกิจ", to: "/web-service" },
   { label: "ติดต่อเรา", to: "/contact" },
 ]
 
@@ -245,8 +237,7 @@ const onSearch = () => {
   showMobileSearch.value = false
 }
 
-/** ✅ auth state (กันพัง) */
-const auth = useAuth?.() as any // กันเคส auto-import พัง
+const auth = useAuth?.() as any
 const session = auth?.session
 const init = auth?.init
 const signOut = auth?.signOut
@@ -255,13 +246,11 @@ onMounted(async () => {
   try {
     if (init) await init()
   } catch (e) {
-    // ไม่ต้อง throw ให้หน้าแตก
     console.error("auth init error:", e)
   }
 })
 
 const isLoggedIn = computed(() => {
-  // ✅ สำคัญ: กัน session undefined
   return !!session?.value
 })
 
