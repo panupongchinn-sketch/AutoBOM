@@ -1,30 +1,28 @@
+// middleware/auth.ts
+//
+// ✅ รันฝั่ง client เท่านั้น
+//    ฝั่ง server ไม่มี sessionStorage → ข้ามไปก่อน แล้วให้ client re-check เอง
+//    ป้องกัน redirect login ทุกครั้งที่รีเฟรชหน้า
+
 export default defineNuxtRouteMiddleware(async (to) => {
-  if (process.server) return
+  // ── ฝั่ง server: ข้ามไปทั้งหมด session อยู่ใน sessionStorage (client-only) ──
+  if (import.meta.server) return
 
-  const { getSession } = useAuth()
+  // ── หน้าสาธารณะ: ไม่ต้อง check ──
+  if (to.path === "/login" || to.path === "/activate") return
 
-  // normalize path กันเคส /login/ หรือ /my-courses/
-  const path = (to.path || "/").replace(/\/+$/, "") || "/"
+  // ── ตรวจ session ──
+  const auth = useAuth()
+  const { session } = await auth.getSession()
+  if (!session) return navigateTo("/login")
 
-  // ✅ หน้าที่ “ต้องล็อกอิน” (เพิ่มได้ตามต้องการ)
-  const protectedPrefixes = ["/my-courses"]
-  const isProtectedRoute = protectedPrefixes.some(
-    (p) => path === p || path.startsWith(p + "/")
-  )
+  // ── ตรวจ license ──
+  const { checkLicense } = useLicense()
+  const lic = await checkLicense()
+  if (!lic) return navigateTo("/login")
 
-  // ✅ หน้าสาธารณะ (เข้าดูได้)
-  const authPages = ["/login", "/signup"]
-  const isAuthPage = authPages.includes(path)
-
-  const { session } = await getSession()
-
-  // ถ้าไม่ล็อกอิน แล้วเข้าหน้า protected → ไป login
-  if (!session && isProtectedRoute) {
-    return navigateTo("/login")
-  }
-
-  // ถ้าล็อกอินแล้ว แต่จะไป login/signup → เด้งไปหน้าคอร์สของฉัน (หรือจะเป็น "/" ก็ได้)
-  if (session && isAuthPage) {
-    return navigateTo("/my-courses")
+  if (!lic.isValid) {
+    if (lic.reason === "email_mismatch") return navigateTo("/login?reason=email_mismatch")
+    return navigateTo("/activate")
   }
 })
