@@ -1060,18 +1060,19 @@ async function logout() {
 
 /* Column widths */
 .col-num    { width: 48px; text-align: center; }
-.col-date   { width: 130px; }
-.col-name   { width: 140px; }
-.col-email  { min-width: 180px; }
-.col-proj   { width: 80px; text-align: center; }
-.col-key    { width: 190px; }
-.col-label  { width: 100px; }
-.col-expire { width: 150px; }
-.col-status { width: 120px; }
+.col-date   { width: 120px; white-space: nowrap; }
+.col-name   { width: auto; min-width: 140px; }
+.col-email  { width: auto; min-width: 180px; }
+.col-proj   { width: 72px; text-align: center; white-space: nowrap; }
+.col-key    { width: 175px; white-space: nowrap; }
+.col-label  { width: 90px; white-space: nowrap; }
+.col-expire { width: 130px; white-space: nowrap; }
+.col-status { width: auto; min-width: 280px; white-space: nowrap; }
 
 .mgmt-td {
-  padding: 11px 14px;
+  padding: 10px 14px;
   border-bottom: 1px solid #f1f5f9;
+  white-space: nowrap;
   vertical-align: middle;
 }
 
@@ -1108,11 +1109,13 @@ async function logout() {
 .user-name {
   font-weight: 600;
   color: #0f172a;
+  white-space: nowrap;
 }
 
 .user-email {
   color: #64748b;
   font-size: 12px;
+  white-space: nowrap;
 }
 
 .proj-count {
@@ -1215,9 +1218,10 @@ async function logout() {
 /* ══ Status cell + Gen button ════════════════════════════════════════════════ */
 .status-cell {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 5px;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
 }
 
 .gen-lic-btn {
@@ -1258,7 +1262,7 @@ async function logout() {
   display: flex;
   align-items: center;
   gap: 4px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .revoke-lic-btn {

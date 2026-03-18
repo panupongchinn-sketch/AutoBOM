@@ -1462,7 +1462,8 @@ async function loadSavedProject(proj: import("~/composables/useProject").BimProj
     try {
       ab = await project.downloadModel(proj)
     } catch (fetchErr: any) {
-      errorText.value = `ดาวน์โหลดโมเดลไม่ได้: ${fetchErr?.message || fetchErr}`
+      // project.error.value จะมีข้อความที่ละเอียดกว่า (set ใน downloadModel แล้ว)
+      errorText.value = project.error.value || `ดาวน์โหลดโมเดลไม่ได้: ${fetchErr?.message || fetchErr}`
       statusText.value = "Failed"
       return
     }

@@ -104,12 +104,32 @@ export const useProject = () => {
       return null
     }
 
-    const { data, error: err } = await $supabase.storage
-      .from("bim-models")
-      .download(proj.storagePath)
+    // ── ดาวน์โหลดผ่าน server proxy (หลีกเลี่ยง CORS preflight) ───────────────
+    const { data: sessionData } = await $supabase.auth.getSession()
+    const jwt = sessionData?.session?.access_token
+    if (!jwt) {
+      error.value = "ไม่ได้เข้าสู่ระบบ กรุณาเข้าสู่ระบบใหม่"
+      return null
+    }
 
-    if (err) { error.value = err.message; return null }
-    return await (data as Blob).arrayBuffer()
+    let response: Response
+    try {
+      response = await fetch(
+        `/api/storage/download?path=${encodeURIComponent(proj.storagePath)}`,
+        { headers: { Authorization: `Bearer ${jwt}` } }
+      )
+    } catch (netErr: any) {
+      error.value = `เชื่อมต่อ server ไม่ได้: ${netErr?.message || "Network error"}`
+      throw netErr
+    }
+
+    if (!response.ok) {
+      const text = await response.text().catch(() => `HTTP ${response.status}`)
+      error.value = `ดาวน์โหลดไม่ได้: ${text}`
+      return null
+    }
+
+    return await response.arrayBuffer()
   }
 
   // ── ลบโปรเจกต์ — ตรวจ ownership ชัดเจนทั้ง app + DB ────────────────────
