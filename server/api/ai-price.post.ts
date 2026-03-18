@@ -24,8 +24,8 @@ export interface AiPriceResponse {
   warnings: string[]
 }
 
-const GEMINI_MODEL = "gemini-1.5-flash"
-const GEMINI_URL   = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`
+const GEMINI_MODEL = "gemini-2.0-flash"
+const GEMINI_URL   = `https://generativelanguage.googleapis.com/v1/models/${GEMINI_MODEL}:generateContent`
 
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
@@ -56,8 +56,7 @@ export default defineEventHandler(async (event) => {
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: {
           temperature: 0.2,
-          maxOutputTokens: 600,
-          responseMimeType: "application/json",
+          maxOutputTokens: 800,
         },
       }),
     })
@@ -81,7 +80,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 502, message: "AI ไม่ส่งข้อมูลกลับมา — กรุณาลองใหม่" })
   }
 
-  const parsed = extractJson(rawText) as AiPriceResponse
+  const parsed = extractJson(rawText) as unknown as AiPriceResponse
 
   return {
     suggestedPrice: Number(parsed.suggestedPrice) || 0,
