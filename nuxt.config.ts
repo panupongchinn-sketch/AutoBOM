@@ -11,7 +11,7 @@ export default defineNuxtConfig({
     plugins: [tailwindcss()],
   },
   runtimeConfig: {
-    anthropicApiKey: process.env.ANTHROPIC_API_KEY,       // server-only
+    geminiApiKey: process.env.GEMINI_API_KEY,             // server-only (Google Gemini free tier)
     supabaseServiceKey: process.env.SUPABASE_SERVICE_KEY, // server-only (service_role key สำหรับ admin API)
     public: {
       SUPABASE_URL: process.env.SUPABASE_URL,

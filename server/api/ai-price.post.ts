@@ -1,9 +1,7 @@
 // server/api/ai-price.post.ts
 //
-// เรียก Claude API เพื่อประเมินราคาต้นทุนงานก่อสร้างไทย
-// Key ถูกเก็บใน runtimeConfig.anthropicApiKey (server-only, ไม่ถูก expose client)
-
-import Anthropic from "@anthropic-ai/sdk"
+// เรียก Google Gemini API (free tier) เพื่อประเมินราคาต้นทุนงานก่อสร้างไทย
+// Key ถูกเก็บใน runtimeConfig.geminiApiKey (server-only, ไม่ถูก expose client)
 
 interface AiPriceRequest {
   category: string
@@ -26,13 +24,17 @@ export interface AiPriceResponse {
   warnings: string[]
 }
 
+const GEMINI_MODEL = "gemini-1.5-flash"
+const GEMINI_URL   = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`
+
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
+  const apiKey = config.geminiApiKey as string | undefined
 
-  if (!config.anthropicApiKey) {
+  if (!apiKey) {
     throw createError({
       statusCode: 500,
-      message: "ANTHROPIC_API_KEY ยังไม่ได้ตั้งค่าในไฟล์ .env",
+      message: "GEMINI_API_KEY ยังไม่ได้ตั้งค่าในไฟล์ .env",
     })
   }
 
@@ -43,48 +45,54 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: "category และ unit จำเป็นต้องระบุ" })
   }
 
-  const client = new Anthropic({ apiKey: config.anthropicApiKey })
-
   const prompt = buildPrompt({ category, unit, name, dims, area, volume, matName })
 
+  let res: Response
   try {
-    const message = await client.messages.create({
-      model: "claude-opus-4-6",
-      max_tokens: 600,
-      messages: [{ role: "user", content: prompt }],
+    res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.2,
+          maxOutputTokens: 600,
+          responseMimeType: "application/json",
+        },
+      }),
     })
-
-    const rawText = (message.content[0] as { type: string; text: string }).text
-    const parsed = extractJson(rawText) as AiPriceResponse
-
-    // Sanity-check: ensure numeric fields are numbers
-    return {
-      suggestedPrice: Number(parsed.suggestedPrice) || 0,
-      priceMin:       Number(parsed.priceMin)       || 0,
-      priceMax:       Number(parsed.priceMax)       || 0,
-      unit:           String(parsed.unit             || unit),
-      confidence:     parsed.confidence             || "medium",
-      reasoning:      String(parsed.reasoning       || ""),
-      marketNotes:    String(parsed.marketNotes     || ""),
-      warnings:       Array.isArray(parsed.warnings) ? parsed.warnings : [],
-    } satisfies AiPriceResponse
-
   } catch (err: any) {
-    if (err.statusCode) throw err   // re-throw createError objects
-
-    // แปลง Anthropic HTTP error เป็นข้อความภาษาไทยที่เข้าใจง่าย
-    const status = err.status ?? err.statusCode ?? 0
-    if (status === 401) {
-      throw createError({ statusCode: 401, message: "API Key ไม่ถูกต้อง — กรุณาตรวจสอบ ANTHROPIC_API_KEY ในไฟล์ .env" })
-    }
-    if (status === 429) {
-      throw createError({ statusCode: 429, message: "ใช้งาน AI เกินโควตา — กรุณารอสักครู่แล้วลองใหม่" })
-    }
-    if (status >= 500) {
-      throw createError({ statusCode: 502, message: "เซิร์ฟเวอร์ AI มีปัญหาชั่วคราว — กรุณาลองใหม่อีกครั้ง" })
-    }
     throw createError({ statusCode: 502, message: "ไม่สามารถเชื่อมต่อ AI ได้ — กรุณาลองใหม่" })
   }
+
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({})) as any
+    const status  = res.status
+    if (status === 400) throw createError({ statusCode: 400, message: "ข้อมูลที่ส่งไม่ถูกต้อง" })
+    if (status === 403) throw createError({ statusCode: 403, message: "GEMINI_API_KEY ไม่ถูกต้องหรือไม่มีสิทธิ์" })
+    if (status === 429) throw createError({ statusCode: 429, message: "ใช้งาน AI เกินโควตา — กรุณารอสักครู่แล้วลองใหม่" })
+    throw createError({ statusCode: 502, message: errBody?.error?.message || "เซิร์ฟเวอร์ AI มีปัญหาชั่วคราว" })
+  }
+
+  const geminiData = await res.json() as any
+  const rawText = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text ?? ""
+
+  if (!rawText) {
+    throw createError({ statusCode: 502, message: "AI ไม่ส่งข้อมูลกลับมา — กรุณาลองใหม่" })
+  }
+
+  const parsed = extractJson(rawText) as AiPriceResponse
+
+  return {
+    suggestedPrice: Number(parsed.suggestedPrice) || 0,
+    priceMin:       Number(parsed.priceMin)       || 0,
+    priceMax:       Number(parsed.priceMax)       || 0,
+    unit:           String(parsed.unit             || unit),
+    confidence:     parsed.confidence             || "medium",
+    reasoning:      String(parsed.reasoning       || ""),
+    marketNotes:    String(parsed.marketNotes     || ""),
+    warnings:       Array.isArray(parsed.warnings) ? parsed.warnings : [],
+  } satisfies AiPriceResponse
 })
 
 // ── Prompt Builder ──────────────────────────────────────────────────────────
@@ -124,17 +132,11 @@ function buildPrompt(p: AiPriceRequest): string {
 
 // ── JSON Extractor ──────────────────────────────────────────────────────────
 function extractJson(text: string): Record<string, unknown> {
-  // Strip markdown fences
   let cleaned = text.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim()
-
-  // Try direct parse first
   try { return JSON.parse(cleaned) } catch { /* fall through */ }
-
-  // Fallback: extract first {...} block
   const match = cleaned.match(/\{[\s\S]*\}/)
   if (match) {
     try { return JSON.parse(match[0]) } catch { /* fall through */ }
   }
-
   throw createError({ statusCode: 502, message: "AI ส่งข้อมูลกลับมาในรูปแบบที่ไม่รองรับ" })
 }
