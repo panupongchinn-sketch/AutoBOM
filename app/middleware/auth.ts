@@ -25,4 +25,11 @@ export default defineNuxtRouteMiddleware(async (to) => {
     if (lic.reason === "email_mismatch") return navigateTo("/login?reason=email_mismatch")
     return navigateTo("/activate")
   }
+
+  // ── หน้า /management: เฉพาะ super user เท่านั้น ──
+  if (to.path === "/management") {
+    const { checkSuperUser } = useSuperUser()
+    const isSuper = await checkSuperUser()
+    if (!isSuper) return navigateTo("/")
+  }
 })

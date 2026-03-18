@@ -11,7 +11,8 @@ export default defineNuxtConfig({
     plugins: [tailwindcss()],
   },
   runtimeConfig: {
-    anthropicApiKey: process.env.ANTHROPIC_API_KEY,   // server-only (ไม่ถูก expose ฝั่ง client)
+    anthropicApiKey: process.env.ANTHROPIC_API_KEY,       // server-only
+    supabaseServiceKey: process.env.SUPABASE_SERVICE_KEY, // server-only (service_role key สำหรับ admin API)
     public: {
       SUPABASE_URL: process.env.SUPABASE_URL,
       SUPABASE_KEY: process.env.SUPABASE_KEY,

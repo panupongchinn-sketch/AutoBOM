@@ -13,8 +13,13 @@ const userLabel = computed(() => {
 })
 async function logout() {
   await auth.signOut()
+  superUser.resetSuperUser()
   await navigateTo("/login")
 }
+
+// ── Super User ──
+const superUser = useSuperUser()
+const isSuperUser = superUser.isSuperUser
 
 const viewport = ref<HTMLDivElement | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
@@ -253,7 +258,10 @@ function closeMenus() {
 
 // ── License info for About modal ──
 const { license, checkLicense } = useLicense()
-onMounted(() => { checkLicense() })
+onMounted(async () => {
+  await checkLicense()
+  await superUser.checkSuperUser()
+})
 
 // ─── View toggles ──────────────────────────────────────────────────────────
 function toggleWireframe() {
@@ -1573,6 +1581,21 @@ onBeforeUnmount(() => {
           </svg>
           <span>{{ userLabel }}</span>
         </div>
+        <!-- Management button — เฉพาะ super user เท่านั้น -->
+        <NuxtLink
+          v-if="isSuperUser"
+          to="/management"
+          class="skp-mgmt-btn"
+          title="จัดการผู้ใช้งาน"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          <span>Management</span>
+        </NuxtLink>
         <button class="skp-logout-btn" title="ออกจากระบบ" @click="logout">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
@@ -3033,6 +3056,27 @@ onBeforeUnmount(() => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.skp-mgmt-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: #c08a00;
+  background: #fdf6e0;
+  border: 1px solid #e8d080;
+  border-radius: 5px;
+  padding: 3px 9px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.skp-mgmt-btn:hover {
+  background: #fbedb0;
+  color: #8a6000;
 }
 
 .skp-logout-btn {
