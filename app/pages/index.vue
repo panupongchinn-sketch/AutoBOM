@@ -417,49 +417,16 @@ function menuAction(action: string) {
   if (action === "About SketchUp")   showAbout.value = true
 }
 
-async function importWithFallback(paths: string[]) {
-  let lastErr: any
-  for (const p of paths) {
-    try {
-      return await import(/* @vite-ignore */ p)
-    } catch (e) {
-      lastErr = e
-    }
-  }
-  throw lastErr || new Error("CDN import failed")
-}
-
 async function initThree() {
   if (viewerReady.value) return
 
-  THREE = await importWithFallback([
-    "https://esm.sh/three@0.160.0",
-    "https://unpkg.com/three@0.160.0/build/three.module.js?module",
-  ])
-  const { OrbitControls } = await importWithFallback([
-    "https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js",
-    "https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js?module",
-  ])
-  const { GLTFLoader } = await importWithFallback([
-    "https://esm.sh/three@0.160.0/examples/jsm/loaders/GLTFLoader.js",
-    "https://unpkg.com/three@0.160.0/examples/jsm/loaders/GLTFLoader.js?module",
-  ])
-  const { DRACOLoader } = await importWithFallback([
-    "https://esm.sh/three@0.160.0/examples/jsm/loaders/DRACOLoader.js",
-    "https://unpkg.com/three@0.160.0/examples/jsm/loaders/DRACOLoader.js?module",
-  ])
-  const { KTX2Loader } = await importWithFallback([
-    "https://esm.sh/three@0.160.0/examples/jsm/loaders/KTX2Loader.js",
-    "https://unpkg.com/three@0.160.0/examples/jsm/loaders/KTX2Loader.js?module",
-  ])
-  const { MeshoptDecoder } = await importWithFallback([
-    "https://esm.sh/three@0.160.0/examples/jsm/libs/meshopt_decoder.module.js",
-    "https://unpkg.com/three@0.160.0/examples/jsm/libs/meshopt_decoder.module.js?module",
-  ])
-  const { RoomEnvironment } = await importWithFallback([
-    "https://esm.sh/three@0.160.0/examples/jsm/environments/RoomEnvironment.js",
-    "https://unpkg.com/three@0.160.0/examples/jsm/environments/RoomEnvironment.js?module",
-  ])
+  THREE = await import("three")
+  const { OrbitControls }   = await import("three/examples/jsm/controls/OrbitControls.js")
+  const { GLTFLoader }      = await import("three/examples/jsm/loaders/GLTFLoader.js")
+  const { DRACOLoader }     = await import("three/examples/jsm/loaders/DRACOLoader.js")
+  const { KTX2Loader }      = await import("three/examples/jsm/loaders/KTX2Loader.js")
+  const { MeshoptDecoder }  = await import("three/examples/jsm/libs/meshopt_decoder.module.js")
+  const { RoomEnvironment } = await import("three/examples/jsm/environments/RoomEnvironment.js")
 
   if (!viewport.value) return
 
